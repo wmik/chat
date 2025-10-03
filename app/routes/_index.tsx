@@ -37,16 +37,43 @@ export default function Home({ actionData }: Route.ComponentProps) {
   }, [navigation]);
 
   useEffect(() => {
-    if (
-      actionData?.metadata?.action === 'ask' &&
-      actionData?.data?.thread?.id
-    ) {
-      toast.dismiss();
-      toast.success('Chat thread created successfully', {
-        description: 'Redirecting to messages.'
-      });
-      navigate(`/chats/${actionData.data.thread.id}`);
+    let interval: NodeJS.Timeout;
+    const INTERVAL = 5000;
+
+    if (actionData?.metadata?.action === 'ask' && actionData?.data?.task?.id) {
+      interval = setInterval(() => {
+        fetch(`/api/tasks/${actionData?.data?.task?.id}`).then(
+          async response => {
+            if (response.ok) {
+              let { data } = await response.json();
+
+              const HOLD = [
+                'CANCELED',
+                'FAILED',
+                'CRASHED',
+                'SYSTEM_FAILURE',
+                'DELAYED',
+                'EXPIRED',
+                'TIMED_OUT'
+              ];
+
+              if (!HOLD?.includes(data?.task?.status)) {
+                toast.dismiss();
+                toast.success('Chat thread created successfully', {
+                  description: 'Redirecting to messages.'
+                });
+                navigate(`/chats/${data.task?.output?.data?.thread?.id}`);
+                clearInterval(interval);
+              }
+            }
+          }
+        );
+      }, INTERVAL);
     }
+
+    return () => {
+      clearInterval(interval);
+    };
   }, [actionData]);
 
   return (

@@ -5,6 +5,7 @@
   "scripts": {
     "build": "react-router build",
     "dev": "cross-env NODE_ENV=development node server.js",
+    "dev:worker": "npx trigger.dev@latest dev",
     "start": "node server.js",
     "typecheck": "react-router typegen && tsc -b"
   },
@@ -20,6 +21,7 @@
     "@react-router/express": "^7.9.2",
     "@react-router/fs-routes": "^7.9.3",
     "@react-router/node": "^7.9.2",
+    "@trigger.dev/sdk": "^4.0.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "compression": "^1.8.1",
@@ -38,6 +40,7 @@
   "devDependencies": {
     "@react-router/dev": "^7.9.2",
     "@tailwindcss/vite": "^4.1.13",
+    "@trigger.dev/build": "^4.0.4",
     "@types/compression": "^1.8.1",
     "@types/express": "^5.0.3",
     "@types/express-serve-static-core": "^5.0.7",

@@ -9,7 +9,16 @@
       "name": "Run Script: dev",
       "request": "launch",
       "command": "npm run dev",
-      "cwd": "${workspaceFolder}"
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env.local"
+    },
+    {
+      "type": "node-terminal",
+      "name": "Run Script: dev:worker",
+      "request": "launch",
+      "command": "npm run dev:worker",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/.env.local"
     }
   ]
 }
