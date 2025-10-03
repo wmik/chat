@@ -47,7 +47,7 @@ export default function Home({ actionData }: Route.ComponentProps) {
             if (response.ok) {
               let { data } = await response.json();
 
-              const HOLD = [
+              const FAIL = [
                 'CANCELED',
                 'FAILED',
                 'CRASHED',
@@ -57,13 +57,21 @@ export default function Home({ actionData }: Route.ComponentProps) {
                 'TIMED_OUT'
               ];
 
-              if (!HOLD?.includes(data?.task?.status)) {
+              if (data?.task?.status === 'COMPLETED') {
                 toast.dismiss();
                 toast.success('Chat thread created successfully', {
                   description: 'Redirecting to messages.'
                 });
                 navigate(`/chats/${data.task?.output?.data?.thread?.id}`);
-                clearInterval(interval);
+                return clearInterval(interval);
+              }
+
+              if (FAIL?.includes(data?.task?.status)) {
+                toast.dismiss();
+                toast.error('Failed to create chat thread', {
+                  description: data?.task?.error?.message
+                });
+                return clearInterval(interval);
               }
             }
           }
