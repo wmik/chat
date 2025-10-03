@@ -3,7 +3,8 @@ import { type FileUpload, parseFormData } from '@remix-run/form-data-parser';
 import { MemoryFileStorage } from '@remix-run/file-storage/memory';
 import { tasks } from '@trigger.dev/sdk';
 import { askTask } from '~/trigger/ask';
-import { parsers } from '~/llm.server';
+import { ingestDocuments, parsers } from '~/llm.server';
+import { randomUUID } from 'node:crypto';
 
 const KB = 1024;
 const MB = 1024 * KB;
@@ -16,15 +17,26 @@ export async function ask({ request, params }: ActionFunctionArgs) {
     uploadHandler
   );
   let files = formData.getAll('files') as File[];
+  let thread_id = params?.id ?? randomUUID();
   let task = await tasks.trigger<typeof askTask>('ask', {
-    thread: params?.id,
+    thread: thread_id,
     query: formData.get('query')?.toString() as string
   });
-  let file = files?.slice()?.pop();
 
-  if (file) {
-    console.log(file?.name, file.type);
-    console.log(await parsers[file?.type]?.(files?.slice()?.pop() as any));
+  for (let file of files) {
+    let source = file?.name;
+    let docs = await parsers[file?.type]?.(file as any);
+    let collection = await ingestDocuments(
+      docs?.map((doc, idx) => ({
+        ...doc,
+        metadata: {
+          ...doc?.metadata,
+          source: `${source} [Page ${idx + 1}]`
+        }
+      })),
+      thread_id
+    );
+    console.log(collection);
   }
 
   return {

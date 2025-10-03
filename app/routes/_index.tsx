@@ -60,7 +60,7 @@ export default function Home({ actionData }: Route.ComponentProps) {
               if (data?.task?.status === 'COMPLETED') {
                 toast.dismiss();
                 toast.success('Chat thread created successfully', {
-                  description: 'Redirecting to messages.'
+                  description: 'Redirecting to messages...please wait'
                 });
                 navigate(`/chats/${data.task?.output?.data?.thread?.id}`);
                 return clearInterval(interval);

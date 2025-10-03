@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { ChatAnthropic } from '@langchain/anthropic';
 import { OpenAIEmbeddings, ChatOpenAI } from '@langchain/openai';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
-import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
+// import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
 import { StringOutputParser } from '@langchain/core/output_parsers';
@@ -18,7 +18,7 @@ import { compile } from 'html-to-text';
 
 function getStore(collectionName: string) {
   let embeddings = new OpenAIEmbeddings({
-    model: 'text-embedding-3-large',
+    model: 'text-embedding-3-small',
     openAIApiKey: process.env.OPENAI_API_KEY
   });
 
@@ -27,29 +27,36 @@ function getStore(collectionName: string) {
     chromaCloudAPIKey: process.env.CHROMA_API_KEY,
     clientParams: {
       tenant: process.env.CHROMA_TENANT,
-      database: process.env.CHROMA_DATABASE
+      database: process.env.CHROMA_DATABASE,
+      host: 'api.trychroma.com',
+      port: 8000,
+      ssl: true,
+      headers: { 'x-chroma-token': process.env.CHROMA_API_KEY as string }
     }
   });
 }
 
-async function ingestDocuments(documents: Document[], store?: Chroma) {
-  let textSplitter = new RecursiveCharacterTextSplitter({
-    chunkSize: 1000,
-    chunkOverlap: 200
-  });
+export async function ingestDocuments(
+  documents: Document[],
+  collection?: string
+) {
+  // let textSplitter = new RecursiveCharacterTextSplitter({
+  //   chunkSize: 1000,
+  //   chunkOverlap: 200
+  // });
 
-  let chunks = textSplitter.splitDocuments(documents);
+  // let chunks = textSplitter.splitDocuments(documents);
 
-  if (!store) {
-    store = getStore(randomUUID());
-  }
+  let store = getStore(collection ?? randomUUID());
 
   store.addDocuments(documents);
 
-  return await store.ensureCollection();
+  return store.toJSON();
 }
 
-async function retrieveSources(store: Chroma, query: string, k = 4) {
+async function retrieveSources(collection: string, query: string, k = 4) {
+  let store = getStore(collection);
+
   if (!store) {
     throw new Error('No documents ingested yet');
   }
@@ -57,12 +64,12 @@ async function retrieveSources(store: Chroma, query: string, k = 4) {
   return await store.similaritySearch(query, k);
 }
 
-async function queryWithStreaming(
-  store: Chroma,
+export async function queryWithStreaming(
+  collection: string,
   question: string,
   onStream: (chunk: string) => void
 ) {
-  let sources = await retrieveSources(store, question);
+  let sources = await retrieveSources(collection, question);
 
   let prompt = PromptTemplate.fromTemplate(
     `You are an assistant for question-answering tasks. Use the following pieces of retrieved context to answer the question. If you don't know the answer, just say that you don't know. Keep the answer concise.
