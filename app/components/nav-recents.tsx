@@ -1,20 +1,20 @@
-"use client"
+'use client';
 
 import {
   Folder,
   Forward,
   MoreHorizontal,
   Trash2,
-  type LucideIcon,
-} from "lucide-react"
+  type LucideIcon
+} from 'lucide-react';
 
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "~/components/ui/dropdown-menu"
+  DropdownMenuTrigger
+} from '~/components/ui/dropdown-menu';
 import {
   SidebarGroup,
   SidebarGroupLabel,
@@ -22,29 +22,29 @@ import {
   SidebarMenuAction,
   SidebarMenuButton,
   SidebarMenuItem,
-  useSidebar,
-} from "~/components/ui/sidebar"
+  useSidebar
+} from '~/components/ui/sidebar';
 
-export function NavFavorites({
-  favorites,
+export function NavRecents({
+  recents
 }: {
-  favorites: {
-    name: string
-    url: string
-    icon: LucideIcon
-  }[]
+  recents: {
+    name: string;
+    url: string;
+    icon: LucideIcon | null;
+  }[];
 }) {
-  const { isMobile } = useSidebar()
+  const { isMobile } = useSidebar();
 
   return (
     <SidebarGroup className="group-data-[collapsible=icon]:hidden">
-      <SidebarGroupLabel>Favorites</SidebarGroupLabel>
+      <SidebarGroupLabel>Recents</SidebarGroupLabel>
       <SidebarMenu>
-        {favorites.map((item) => (
+        {recents.map(item => (
           <SidebarMenuItem key={item.name}>
             <SidebarMenuButton asChild>
               <a href={item.url}>
-                <item.icon />
+                {item.icon ? <item.icon /> : item.icon}
                 <span>{item.name}</span>
               </a>
             </SidebarMenuButton>
@@ -57,8 +57,8 @@ export function NavFavorites({
               </DropdownMenuTrigger>
               <DropdownMenuContent
                 className="w-48 rounded-lg"
-                side={isMobile ? "bottom" : "right"}
-                align={isMobile ? "end" : "start"}
+                side={isMobile ? 'bottom' : 'right'}
+                align={isMobile ? 'end' : 'start'}
               >
                 <DropdownMenuItem>
                   <Folder className="text-muted-foreground" />
@@ -85,5 +85,5 @@ export function NavFavorites({
         </SidebarMenuItem>
       </SidebarMenu>
     </SidebarGroup>
-  )
+  );
 }

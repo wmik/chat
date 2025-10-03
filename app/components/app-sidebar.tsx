@@ -4,16 +4,13 @@ import * as React from 'react';
 import {
   AudioWaveform,
   Command,
-  Frame,
   GalleryVerticalEnd,
-  Map,
   MessageCircleIcon,
-  PieChart,
   Settings2
 } from 'lucide-react';
 
 import { NavMain } from '~/components/nav-main';
-// import { NavFavorites } from '~/components/nav-favorites';
+import { NavRecents } from '~/components/nav-recents';
 import { NavUser } from '~/components/nav-user';
 import { TeamSwitcher } from '~/components/team-switcher';
 import {
@@ -29,7 +26,7 @@ const data = {
   user: {
     name: 'jeandoe',
     email: 'jeandoe@provider.domain',
-    avatar: '/avatars/jeandoe.jpg'
+    avatar: 'https://avatar.iran.liara.run/public/14'
   },
   teams: [
     {
@@ -93,21 +90,21 @@ const data = {
       ]
     }
   ],
-  favorites: [
+  recents: [
     {
       name: 'Design Engineering',
       url: '#',
-      icon: Frame
+      icon: null //Frame
     },
     {
       name: 'Sales & Marketing',
       url: '#',
-      icon: PieChart
+      icon: null //PieChart
     },
     {
       name: 'Travel',
       url: '#',
-      icon: Map
+      icon: null //Map
     }
   ]
 };
@@ -120,7 +117,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        {/* <NavFavorites favorites={data.favorites} /> */}
+        <NavRecents recents={data.recents} />
       </SidebarContent>
       <SidebarFooter>
         <NavUser user={data.user} />

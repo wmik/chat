@@ -15,13 +15,15 @@ import { toast } from 'sonner';
 
 type ChatFormProps = {
   name: string;
+  action: string;
   className?: string;
 };
 
-export function ChatForm({ name, className }: ChatFormProps) {
-  let fileInputRef = useRef<HTMLInputElement>(null);
+export function ChatForm({ name, action, className }: ChatFormProps) {
+  let [canSubmit, setCanSubmit] = useState(false);
   let [screenshot, setScreenshot] = useState('');
   let [isCapturing, setIsCapturing] = useState(false);
+  let fileInputRef = useRef<HTMLInputElement>(null);
   let streamRef = useRef<MediaStream>(null);
 
   async function captureScreenshot() {
@@ -29,7 +31,7 @@ export function ChatForm({ name, className }: ChatFormProps) {
 
     try {
       // Request screen capture using navigator.mediaDevices
-      const stream = await navigator.mediaDevices.getDisplayMedia({
+      let stream = await navigator.mediaDevices.getDisplayMedia({
         video: {
           displaySurface: 'browser'
         },
@@ -39,7 +41,8 @@ export function ChatForm({ name, className }: ChatFormProps) {
       streamRef.current = stream;
 
       // Create video element to capture frame
-      const video = document.createElement('video');
+      let video = document.createElement('video');
+
       video.srcObject = stream;
       video.play();
 
@@ -49,17 +52,19 @@ export function ChatForm({ name, className }: ChatFormProps) {
       });
 
       // Create canvas and capture frame
-      const canvas = document.createElement('canvas');
+      let canvas = document.createElement('canvas');
+
       canvas.width = video.videoWidth;
       canvas.height = video.videoHeight;
 
-      const ctx = canvas.getContext('2d');
+      let ctx = canvas.getContext('2d');
+
       ctx?.drawImage(video, 0, 0);
 
       // Convert to data URL
-      const dataUrl = canvas.toDataURL('image/png');
-      setScreenshot(dataUrl);
+      let dataUrl = canvas.toDataURL('image/png');
 
+      setScreenshot(dataUrl);
       // Stop all tracks
       stream.getTracks().forEach(track => track.stop());
       streamRef.current = null;
@@ -102,6 +107,7 @@ export function ChatForm({ name, className }: ChatFormProps) {
         name={name}
         placeholder="Start typing..."
         className="border-0 shadow-none resize-none focus-visible:ring-0"
+        onChange={e => setCanSubmit(e.target.value.length > 0)}
       />
       <div className="flex">
         <Popover>
@@ -145,7 +151,12 @@ export function ChatForm({ name, className }: ChatFormProps) {
             </div>
           </PopoverContent>
         </Popover>
-        <Button className="w-fit ml-auto" name="_action" value="ask">
+        <Button
+          className="w-fit ml-auto disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-auto disabled:bg-primary/20 disabled:text-primary/30 transition-all"
+          name="_action"
+          value={action}
+          disabled={!canSubmit || isCapturing}
+        >
           <SendIcon />
         </Button>
       </div>

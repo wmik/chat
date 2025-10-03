@@ -99,7 +99,11 @@ export default function ChatPage({ loaderData }: Route.ComponentProps) {
               />
             );
           })}
-          <ChatForm name="query" className="mx-auto max-w-full mt-auto" />
+          <ChatForm
+            name="query"
+            action="ask"
+            className="mx-auto max-w-full mt-auto"
+          />
         </main>
       </SidebarInset>
     </SidebarProvider>
