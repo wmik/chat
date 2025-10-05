@@ -15,24 +15,13 @@ export const askTask = task({
 
     await wait.for({ seconds: 5 });
 
-    if (!payload?.thread) {
-      return {
-        data: {
-          thread: {
-            id: randomUUID(),
-            created_at: new Date().toISOString()
-          }
-        },
-        errors: null,
-        metadata: {
-          action: 'ask',
-          timestamp: new Date().toISOString()
-        }
-      };
-    }
-
     return {
-      data: {},
+      data: {
+        thread: {
+          id: payload?.thread ?? randomUUID(),
+          created_at: new Date().toISOString()
+        }
+      },
       errors: null,
       metadata: {
         action: 'ask',

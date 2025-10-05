@@ -155,8 +155,8 @@ async function csv(blob: Blob) {
   return await loader.load();
 }
 
-type FileParser = (blob: Blob) => Promise<Document<Record<string, any>>[]>;
-type StringParser = (text: string) => Promise<Document<Record<string, any>>[]>;
+type FileParser = (blob: Blob) => Promise<Document[]>;
+type StringParser = (text: string) => Promise<Document[]>;
 type Parser = FileParser | StringParser;
 
 export const parsers: Record<string, Parser> = {

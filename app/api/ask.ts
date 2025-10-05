@@ -24,19 +24,24 @@ export async function ask({ request, params }: ActionFunctionArgs) {
   });
 
   for (let file of files) {
+    if (file.size <= 0) {
+      continue;
+    }
+
     let source = file?.name;
-    let docs = await parsers[file?.type]?.(file as any);
-    let collection = await ingestDocuments(
+    let parser = parsers[file?.type];
+    let docs = await parser?.(file as any);
+
+    await ingestDocuments(
       docs?.map((doc, idx) => ({
         ...doc,
         metadata: {
-          ...doc?.metadata,
+          original: JSON.stringify(doc?.metadata),
           source: `${source} [Page ${idx + 1}]`
         }
       })),
       thread_id
     );
-    console.log(collection);
   }
 
   return {
