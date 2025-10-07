@@ -6,7 +6,7 @@ import { toast } from 'sonner';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Chat —– Login' },
+    { title: 'Chat – Login' },
     { name: 'description', content: 'Login to chat application' }
   ];
 }

@@ -7,7 +7,7 @@ import { useNavigate } from 'react-router';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Chat -– Registration' },
+    { title: 'Chat – Registration' },
     { name: 'description', content: 'Register to chat application' }
   ];
 }

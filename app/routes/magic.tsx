@@ -8,7 +8,7 @@ export async function loader({ request }: Route.LoaderArgs) {
   let session = await verifyCode(code as string);
 
   if (session) {
-    throw redirect(`/chats/${session?.organization_id}`, {
+    throw redirect(`/${session?.organization_id}`, {
       status: 302
     });
   }

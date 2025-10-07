@@ -1,5 +1,5 @@
 import { handler } from '~/api/handler';
-import type { Route } from './+types/_index';
+import type { Route } from './+types/$account._index';
 import { ChatForm } from '~/components/organisms/chat-form';
 import { useNavigation, useNavigate } from 'react-router';
 import { toast } from 'sonner';
@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 
 export function meta({}: Route.MetaArgs) {
   return [
-    { title: 'Chat' },
+    { title: 'Chat – Home' },
     { name: 'description', content: 'Chat application' }
   ];
 }

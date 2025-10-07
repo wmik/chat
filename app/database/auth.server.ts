@@ -139,9 +139,19 @@ export async function verifyCode(token: string) {
     return null;
   }
 
-  let { membership } = authorization?.custom as Record<string, any>;
+  let custom = authorization?.custom as Record<string, any>;
   let expired =
     new Date().getTime() > Number(authorization?.expired_at?.getTime());
+
+  let membership = await db.memberships.findUnique({
+    where: {
+      account_id_organization_id: {
+        account_id: custom?.membership?.account_id,
+        organization_id: custom?.membership?.organization_id
+      }
+    },
+    include: { organization: true, account: true }
+  });
 
   let session =
     membership && !expired

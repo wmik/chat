@@ -13,7 +13,7 @@ import {
   SidebarProvider,
   SidebarTrigger
 } from '~/components/ui/sidebar';
-import type { Route } from './+types/chats.$id';
+import type { Route } from './+types/$account.chats.$id';
 import { randomUUID } from 'node:crypto';
 import { ChatInterface } from '~/components/organisms/chat-interface';
 
