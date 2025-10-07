@@ -1,42 +1,62 @@
-import type { messages, threads } from '~/generated/prisma';
-import type { InputJsonValue } from '~/generated/prisma/runtime/library';
+import type { messages, threads } from '~/generated/prisma/client';
+import type { InputJsonValue } from '~/generated/prisma/internal/prismaNamespace';
 import { db } from '~/database/db.server';
-import { nanoid } from 'nanoid';
+import { uid } from '~/misc';
 
 export function listLatestThreads(limit = 10) {
-  return db.threads.findMany({ take: limit, orderBy: { created_at: 'asc' } });
+  return db.threads.findMany({ take: limit, orderBy: { created_at: 'desc' } });
 }
 
 export function getThreadById(id: string) {
   return db.threads.findUnique({ where: { id }, include: { messages: true } });
 }
 
-export async function upsertThread(thread: threads, messages?: messages[]) {
+export function getUserThreads(accountId: string) {
+  return db.threads.findMany({ where: { account_id: accountId } });
+}
+
+export function getOrganizationThreads(organizationId: string) {
+  return db.threads.findMany({ where: { organization_id: organizationId } });
+}
+
+type ThreadsInput = Omit<Partial<threads>, 'account_id'> &
+  Pick<threads, 'account_id' | 'organization_id'>;
+
+type MessagesInput = Omit<
+  Partial<messages>,
+  'author' | 'content' | 'thread_id'
+> &
+  Pick<messages, 'author' | 'content' | 'thread_id'>;
+
+export async function upsertThread(
+  thread: ThreadsInput,
+  messages?: MessagesInput[]
+) {
+  let input = {
+    ...thread,
+    id: thread?.id ?? uid(),
+    custom: thread?.custom as InputJsonValue,
+    messages: {
+      createMany: {
+        data:
+          messages?.map(message => ({
+            ...message,
+            id: message?.id ?? uid(),
+            custom: message?.custom as InputJsonValue
+          })) ?? []
+      }
+    }
+  };
+
   return await db.$transaction(async tx => {
-    await tx.users_sync.findUniqueOrThrow({ where: { id: thread.user_id } });
+    // await tx.accounts_sync.findUniqueOrThrow({ where: { id: thread.account_id } });
 
     return tx.threads.upsert({
       where: {
-        id: thread.id
+        id: thread?.id
       },
-      create: {
-        ...thread,
-        custom: thread?.custom as InputJsonValue,
-        messages: {
-          createMany: {
-            data:
-              messages?.map(message => ({
-                ...message,
-                id: message?.id ?? nanoid(),
-                custom: message?.custom as InputJsonValue
-              })) ?? []
-          }
-        }
-      },
-      update: {
-        ...thread,
-        custom: thread?.custom as InputJsonValue
-      }
+      create: input,
+      update: input
     });
   });
 }

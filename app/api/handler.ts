@@ -1,5 +1,6 @@
 import type { ActionFunctionArgs } from 'react-router';
 import { ask } from '~/api/ask';
+import { login, register } from '~/api/auth';
 
 type HandlerResponse = {
   data: any;
@@ -11,7 +12,9 @@ const handlers: Record<
   string,
   (args: ActionFunctionArgs) => Promise<HandlerResponse>
 > = {
-  ask
+  ask,
+  login,
+  register
 };
 
 export async function handler(action: string, args: ActionFunctionArgs) {

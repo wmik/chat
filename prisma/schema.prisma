@@ -1,50 +1,106 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../app/generated/prisma"
+  provider     = "prisma-client"
+  output       = "../app/generated/prisma"
+  moduleFormat = "cjs"
 }
 
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
-  schemas  = ["neon_auth", "public"]
 }
 
-model users_sync {
-  raw_json   Json
-  id         String    @id @default(dbgenerated("(raw_json ->> 'id'::text)"))
-  name       String?   @default(dbgenerated("(raw_json ->> 'display_name'::text)"))
-  email      String?   @default(dbgenerated("(raw_json ->> 'primary_email'::text)"))
-  created_at DateTime? @default(dbgenerated("to_timestamp((trunc((((raw_json ->> 'signed_up_at_millis'::text))::bigint)::double precision) / (1000)::double precision))")) @db.Timestamptz(6)
-  updated_at DateTime? @db.Timestamptz(6)
-  deleted_at DateTime? @db.Timestamptz(6)
+model authorizations {
+  token      String    @id
+  type       String
+  custom     Json?     @default("{}")
+  expired_at DateTime
+  created_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
+  deleted_at DateTime?
+}
 
-  @@index([deleted_at])
-  @@schema("neon_auth")
+model accounts {
+  id             String        @id @default(uuid())
+  name           String
+  email          String        @unique
+  email_verified DateTime?
+  role           String
+  custom         Json?         @default("{}")
+  created_at     DateTime      @default(now())
+  updated_at     DateTime      @updatedAt
+  deleted_at     DateTime?
+  memberships    memberships[]
+  threads        threads[]
+  sessions       sessions[]
+}
+
+model organizations {
+  id          String        @id @default(uuid())
+  name        String
+  slug        String        @unique
+  custom      Json?         @default("{}")
+  created_at  DateTime      @default(now())
+  updated_at  DateTime      @updatedAt
+  deleted_at  DateTime?
+  memberships memberships[]
+  threads     threads[]
+  sessions    sessions[]
+}
+
+model memberships {
+  account_id      String
+  organization_id String
+  role            String
+  custom          Json?     @default("{}")
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  deleted_at      DateTime?
+
+  account      accounts      @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
+
+  @@id([account_id, organization_id])
+}
+
+model sessions {
+  id              String    @id
+  custom          Json?     @default("{}")
+  account_id      String
+  organization_id String
+  expired_at      DateTime?
+  created_at      DateTime  @default(now())
+  updated_at      DateTime  @updatedAt
+  deleted_at      DateTime?
+
+  account      accounts      @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 }
 
 model threads {
-  id         String     @id @default(uuid())
-  title      String?
-  user_id    String
-  custom     Json       @default("{}")
-  created_at DateTime   @default(now())
-  updated_at DateTime   @default(now())
-  deleted_at DateTime?
-  messages   messages[]
+  id              String     @id @default(uuid())
+  title           String?
+  account_id      String
+  organization_id String
+  custom          Json?      @default("{}")
+  created_at      DateTime   @default(now())
+  updated_at      DateTime   @updatedAt
+  deleted_at      DateTime?
+  messages        messages[]
 
-  @@index([user_id])
-  @@schema("public")
+  account      accounts      @relation(fields: [account_id], references: [id], onDelete: Cascade)
+  organization organizations @relation(fields: [organization_id], references: [id], onDelete: Cascade)
 }
 
 model messages {
   id         String    @id @default(uuid())
+  author     String
   content    String
+  reaction   String?
   thread_id  String
-  custom     Json      @default("{}")
+  custom     Json?     @default("{}")
   created_at DateTime  @default(now())
-  updated_at DateTime  @default(now())
+  updated_at DateTime  @updatedAt
   deleted_at DateTime?
-  thread     threads   @relation(fields: [thread_id], references: [id], onDelete: Cascade)
 
-  @@schema("public")
+  thread threads @relation(fields: [thread_id], references: [id], onDelete: Cascade)
 }
