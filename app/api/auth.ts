@@ -1,6 +1,6 @@
 import { type ActionFunctionArgs } from 'react-router';
 import {
-  authenticateUser,
+  generateLoginCode,
   registerUser,
   listUserOrganizations
 } from '~/database/auth.server';
@@ -29,13 +29,13 @@ export async function login({ request }: ActionFunctionArgs) {
     : organizations?.slice()?.shift()?.id;
 
   if (email && organization) {
-    let code = await authenticateUser(email, organization);
+    let code = await generateLoginCode(email, organization);
 
     onSuccess(code as string);
 
     return {
       data: {
-        code
+        sent: true
       },
       errors: null,
       metadata: {

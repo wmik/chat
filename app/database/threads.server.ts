@@ -11,12 +11,18 @@ export function getThreadById(id: string) {
   return db.threads.findUnique({ where: { id }, include: { messages: true } });
 }
 
-export function getUserThreads(accountId: string) {
-  return db.threads.findMany({ where: { account_id: accountId } });
+export function listUserThreads(accountId: string) {
+  return db.threads.findMany({
+    where: { account_id: accountId },
+    orderBy: { created_at: 'desc' }
+  });
 }
 
-export function getOrganizationThreads(organizationId: string) {
-  return db.threads.findMany({ where: { organization_id: organizationId } });
+export function listOrganizationThreads(organizationId: string) {
+  return db.threads.findMany({
+    where: { organization_id: organizationId },
+    orderBy: { created_at: 'desc' }
+  });
 }
 
 type ThreadsInput = Omit<Partial<threads>, 'account_id'> &

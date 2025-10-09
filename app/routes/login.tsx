@@ -17,7 +17,7 @@ export function action(args: Route.ActionArgs) {
 
 export default function LoginPage({ actionData }: Route.ComponentProps) {
   useEffect(() => {
-    if (actionData?.data?.code && actionData?.metadata?.action === 'login') {
+    if (actionData?.data?.sent && actionData?.metadata?.action === 'login') {
       toast('Magic link sent.', {
         description: 'Check your inbox or spam folder.'
       });

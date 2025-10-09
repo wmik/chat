@@ -1,9 +1,25 @@
 import { handler } from '~/api/handler';
 import type { Route } from './+types/$account._index';
 import { ChatForm } from '~/components/organisms/chat-form';
-import { useNavigation, useNavigate } from 'react-router';
+import {
+  useNavigation,
+  useNavigate,
+  type UIMatch,
+  redirect
+} from 'react-router';
 import { toast } from 'sonner';
 import { useEffect } from 'react';
+import { Crumbs } from '~/components/crumbs';
+import { getSession } from '~/database/auth.server';
+import { listOrganizationThreads } from '~/database/threads.server';
+
+export const handle = {
+  breadcrumb: ({ params }: UIMatch) => {
+    return (
+      <Crumbs data={[{ children: 'Chats', href: `/${params?.account}` }]} />
+    );
+  }
+};
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -16,8 +32,27 @@ export function action(args: Route.ActionArgs) {
   return handler('ask', args);
 }
 
-export function loader({ context }: Route.LoaderArgs) {
-  return { message: context.VALUE_FROM_EXPRESS };
+export async function loader({ request }: Route.LoaderArgs) {
+  let { getUser } = await getSession(request);
+  let session = await getUser();
+
+  if (!session) {
+    throw redirect('/login');
+  }
+
+  let threads = await listOrganizationThreads(
+    session?.organization_id as string
+  );
+
+  return {
+    data: {
+      session
+    },
+    errors: null,
+    metadata: {
+      timestamp: new Date().toISOString()
+    }
+  };
 }
 
 export default function Home({ actionData }: Route.ComponentProps) {
@@ -85,7 +120,7 @@ export default function Home({ actionData }: Route.ComponentProps) {
   }, [actionData]);
 
   return (
-    <main className="flex flex-col items-center gap-4 max-w-7xl mx-auto mt-50">
+    <main className="flex flex-col items-center gap-4 max-w-7xl mx-auto mt-50 w-full">
       <h1 className="text-5xl font-semibold">Start a new conversation</h1>
       <p className="text-xl text-muted-foreground">
         Ask a question or write a prompt to start gathering ideas.

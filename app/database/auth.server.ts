@@ -4,12 +4,105 @@ import type {
   memberships,
   organizations
 } from '~/generated/prisma/client';
-import type {
-  InputJsonValue,
-  JsonObject
-} from '~/generated/prisma/internal/prismaNamespace';
+import type { InputJsonValue } from '~/generated/prisma/internal/prismaNamespace';
 import { randomBytes } from 'node:crypto';
-import { uid } from '~/misc';
+import { getRequiredServerEnvVar, uid } from '~/misc';
+import { createCookieSessionStorage } from 'react-router';
+
+const sessionIdKey = '__session_id__';
+const SESSION_EXPIRATION_MS = 1000 * 60 * 60 * 24 * 120;
+const sessionStorage = createCookieSessionStorage({
+  cookie: {
+    name: `${
+      process.env.NODE_ENV === 'production' ? '__Secure-' : ''
+    }chat.session-token`,
+    secure: true,
+    secrets: [getRequiredServerEnvVar('SESSION_SECRET')],
+    sameSite: 'lax',
+    path: '/',
+    maxAge: SESSION_EXPIRATION_MS / 1000,
+    httpOnly: true
+  }
+});
+
+export async function getSession(request: Request) {
+  let session = await sessionStorage.getSession(request.headers.get('Cookie'));
+  let initialValue = await sessionStorage.commitSession(session);
+  let getSessionId = () => session.get(sessionIdKey);
+  let unsetSessionId = () => session.unset(sessionIdKey);
+  let commit = async () => {
+    let currentValue = await sessionStorage.commitSession(session);
+    return currentValue === initialValue ? null : currentValue;
+  };
+
+  return {
+    session,
+    async getUser() {
+      let id = getSessionId();
+
+      if (!id) {
+        return null;
+      }
+
+      let _session = await db.sessions.findUnique({ where: { id } });
+
+      return _session
+        ? await db.memberships.findUnique({
+            where: {
+              account_id_organization_id: {
+                account_id: _session?.account_id,
+                organization_id: _session?.organization_id
+              }
+            },
+            include: { account: true, organization: true }
+          })
+        : null;
+    },
+    getSessionId,
+    unsetSessionId,
+    signIn: async (account: string, organization: string) => {
+      let _session = await db.sessions.create({
+        data: {
+          account_id: account,
+          organization_id: organization,
+          id: uid()
+        }
+      });
+      session.set(sessionIdKey, _session.id);
+    },
+    signOut: () => {
+      let sessionId = getSessionId();
+
+      if (sessionId) {
+        unsetSessionId();
+        db.sessions.delete({ where: { id: sessionId } }).catch(() => null);
+      }
+    },
+    commit,
+    /**
+     * This will initialize a Headers object if one is not provided.
+     * It will set the 'Set-Cookie' header value on that headers object.
+     * It will then return that Headers object.
+     */
+    getHeaders: async (headers: ResponseInit['headers'] = new Headers()) => {
+      let value = await commit();
+
+      if (!value) {
+        return headers;
+      }
+
+      if (headers instanceof Headers) {
+        headers.append('Set-Cookie', value);
+      } else if (Array.isArray(headers)) {
+        headers.push(['Set-Cookie', value]);
+      } else {
+        headers['Set-Cookie'] = value;
+      }
+
+      return headers;
+    }
+  };
+}
 
 type TimelessInput<T> = Omit<T, 'created_at' | 'updated_at' | 'deleted_at'>;
 type Optional<T, K extends keyof T> = Omit<T, K> & Partial<Pick<T, K>>;
@@ -94,7 +187,10 @@ type CompoundMembership = memberships & {
   organization: organizations;
 };
 
-export async function authenticateUser(email: string, organization_id: string) {
+export async function generateLoginCode(
+  email: string,
+  organization_id: string
+) {
   let account = await db.accounts.findUnique({ where: { email } });
 
   let membership = account
@@ -132,7 +228,7 @@ export async function authenticateUser(email: string, organization_id: string) {
   return null;
 }
 
-export async function verifyCode(token: string) {
+export async function verifyLoginCode(token: string) {
   let authorization = await db.authorizations.findUnique({ where: { token } });
 
   if (!authorization) {
@@ -143,28 +239,7 @@ export async function verifyCode(token: string) {
   let expired =
     new Date().getTime() > Number(authorization?.expired_at?.getTime());
 
-  let membership = await db.memberships.findUnique({
-    where: {
-      account_id_organization_id: {
-        account_id: custom?.membership?.account_id,
-        organization_id: custom?.membership?.organization_id
-      }
-    },
-    include: { organization: true, account: true }
-  });
-
-  let session =
-    membership && !expired
-      ? await db.sessions.create({
-          data: {
-            account_id: membership?.account_id,
-            organization_id: membership?.organization_id,
-            id: uid()
-          }
-        })
-      : null;
-
   await db.authorizations.delete({ where: { token } });
 
-  return session;
+  return expired ? null : custom;
 }
