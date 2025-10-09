@@ -4,12 +4,16 @@ import { MemoryFileStorage } from '@remix-run/file-storage/memory';
 import { tasks } from '@trigger.dev/sdk';
 import { askTask } from '~/trigger/ask';
 import { ingestDocuments, parsers } from '~/llm.server';
-import { randomUUID } from 'node:crypto';
+import { uid } from '~/misc';
+import { upsertThread } from '~/database/threads.server';
+import { getSession } from '~/database/auth.server';
 
 const KB = 1024;
 const MB = 1024 * KB;
 
 export async function ask({ request, params }: ActionFunctionArgs) {
+  let { getUser } = await getSession(request);
+  let session = await getUser();
   let fileStorage = new MemoryFileStorage();
   let formData = await parseFormData(
     request,
@@ -17,10 +21,26 @@ export async function ask({ request, params }: ActionFunctionArgs) {
     uploadHandler
   );
   let files = formData.getAll('files') as File[];
-  let thread_id = params?.id ?? randomUUID();
+  let query = formData.get('query')?.toString() as string;
+  let thread_id = params?.thread ?? uid();
+  let thread = await upsertThread(
+    {
+      id: thread_id,
+      account_id: session?.account_id as string,
+      organization_id: session?.organization_id as string
+    },
+    [
+      {
+        content: query,
+        author: 'human'
+      }
+    ]
+  );
   let task = await tasks.trigger<typeof askTask>('ask', {
-    thread: thread_id,
-    query: formData.get('query')?.toString() as string
+    account: session?.account_id,
+    organization: session?.organization_id,
+    thread: thread?.id,
+    query
   });
 
   for (let file of files) {

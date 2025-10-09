@@ -32,7 +32,7 @@ type MessagesInput = Omit<
   Partial<messages>,
   'author' | 'content' | 'thread_id'
 > &
-  Pick<messages, 'author' | 'content' | 'thread_id'>;
+  Pick<messages, 'author' | 'content'>;
 
 export async function upsertThread(
   thread: ThreadsInput,

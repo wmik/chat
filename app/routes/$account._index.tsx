@@ -11,7 +11,10 @@ import { toast } from 'sonner';
 import { useEffect } from 'react';
 import { Crumbs } from '~/components/crumbs';
 import { getSession } from '~/database/auth.server';
-import { listOrganizationThreads } from '~/database/threads.server';
+import {
+  listOrganizationThreads,
+  listUserThreads
+} from '~/database/threads.server';
 
 export const handle = {
   breadcrumb: ({ params }: UIMatch) => {
@@ -40,13 +43,18 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw redirect('/login');
   }
 
-  let threads = await listOrganizationThreads(
-    session?.organization_id as string
-  );
+  let admin = session?.account?.role === 'ADMIN';
+  let owner = session?.role === 'OWNER';
+  let authorized = admin || owner;
+
+  let threads = authorized
+    ? await listOrganizationThreads(session?.organization_id as string)
+    : await listUserThreads(session?.account_id);
 
   return {
     data: {
-      session
+      session,
+      threads
     },
     errors: null,
     metadata: {
@@ -97,7 +105,9 @@ export default function Home({ actionData }: Route.ComponentProps) {
                 toast.success('Chat thread created successfully', {
                   description: 'Redirecting to messages...please wait'
                 });
-                navigate(`/chats/${data.task?.output?.data?.thread?.id}`);
+                navigate(
+                  `/${data.task?.output?.data?.thread?.organization_id}/chats/${data.task?.output?.data?.thread?.id}`
+                );
                 return clearInterval(interval);
               }
 

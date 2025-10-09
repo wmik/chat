@@ -1,8 +1,11 @@
 import type { Route } from './+types/$account.chats.$thread';
 import { randomUUID } from 'node:crypto';
 import type { UIMatch } from 'react-router';
+import { redirect } from 'react-router';
 import { Crumbs } from '~/components/crumbs';
 import { ChatInterface } from '~/components/organisms/chat-interface';
+import { getSession } from '~/database/auth.server';
+import { getThreadById } from '~/database/threads.server';
 
 export const handle = {
   breadcrumb: ({
@@ -22,36 +25,27 @@ export const handle = {
   }
 };
 
-export async function loader({ context }: Route.LoaderArgs) {
-  let response = await fetch(
-    'https://raw.githubusercontent.com/wmik/use-media-recorder/refs/heads/main/readme.md'
-  );
+export async function loader({ request, params }: Route.LoaderArgs) {
+  let { getUser } = await getSession(request);
+  let session = await getUser();
 
-  if (response.ok) {
-    let threadId = randomUUID();
+  if (!session) {
+    throw redirect('/login');
+  }
 
+  let admin = session?.account?.role === 'ADMIN';
+  let owner = session?.role === 'OWNER';
+  let authorized = admin || owner;
+  let thread = await getThreadById(params?.thread);
+
+  if (thread) {
     return {
       data: {
-        thread: {
-          id: threadId,
-          created_at: new Date(),
-          messages: [
-            {
-              id: randomUUID(),
-              author: 'human',
-              content: 'Describe the use-media-recorder',
-              created_at: new Date(),
-              thread_id: threadId
-            },
-            {
-              id: randomUUID(),
-              author: 'assistant',
-              content: await response.clone().text(),
-              created_at: new Date(),
-              thread_id: threadId
-            }
-          ]
-        }
+        thread
+      },
+      errors: null,
+      metadata: {
+        timestamp: new Date().toISOString()
       }
     };
   }
