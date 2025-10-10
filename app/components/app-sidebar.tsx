@@ -3,6 +3,7 @@
 import * as React from 'react';
 import {
   AudioWaveform,
+  BuildingIcon,
   Command,
   GalleryVerticalEnd,
   MessageCircleIcon,
@@ -20,6 +21,8 @@ import {
   SidebarHeader,
   SidebarRail
 } from '~/components/ui/sidebar';
+import { useLoaderData } from 'react-router';
+import type { Route } from '../routes/+types/$account';
 
 // This is sample data.
 const data = {
@@ -110,17 +113,28 @@ const data = {
 };
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
+  let loaderData = useLoaderData<Route.ComponentProps['loaderData']>();
+  let { session, organizations } = loaderData?.data ?? {};
+
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher teams={data.teams} />
+        <TeamSwitcher
+          teams={
+            organizations?.map(organization => ({
+              name: organization?.name,
+              logo: BuildingIcon,
+              plan: 'Free'
+            })) ?? data.teams
+          }
+        />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
         <NavRecents recents={data.recents} />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={data.user} />
+        <NavUser user={{ ...data.user, ...session?.account }} />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

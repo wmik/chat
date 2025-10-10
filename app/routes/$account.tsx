@@ -1,12 +1,4 @@
 import { AppSidebar } from '~/components/app-sidebar';
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator
-} from '~/components/ui/breadcrumb';
 import { Separator } from '~/components/ui/separator';
 import {
   SidebarInset,
@@ -14,9 +6,32 @@ import {
   SidebarTrigger
 } from '~/components/ui/sidebar';
 import type { Route } from './+types/$account';
-import { Outlet, useMatches, type UIMatch } from 'react-router';
+import { Outlet, redirect, useMatches, type UIMatch } from 'react-router';
 import { Fragment } from 'react/jsx-runtime';
 import type { ReactNode } from 'react';
+import { getSession, listUserOrganizations } from '~/database/auth.server';
+
+export async function loader({ request }: Route.LoaderArgs) {
+  let { getUser } = await getSession(request);
+  let session = await getUser();
+
+  if (!session) {
+    throw redirect('/login');
+  }
+
+  let organizations = await listUserOrganizations(session?.account?.email);
+
+  return {
+    data: {
+      session,
+      organizations
+    },
+    errors: null,
+    metadata: {
+      timestamp: new Date().toISOString()
+    }
+  };
+}
 
 type Breadcrumb = (props: UIMatch) => ReactNode;
 

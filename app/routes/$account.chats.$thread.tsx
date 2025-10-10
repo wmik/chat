@@ -1,5 +1,4 @@
 import type { Route } from './+types/$account.chats.$thread';
-import { randomUUID } from 'node:crypto';
 import type { UIMatch } from 'react-router';
 import { redirect } from 'react-router';
 import { Crumbs } from '~/components/crumbs';
