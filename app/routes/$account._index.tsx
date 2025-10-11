@@ -81,6 +81,15 @@ export default function Home({ actionData }: Route.ComponentProps) {
   }, [navigation]);
 
   useEffect(() => {
+    if (Number(actionData?.errors?.length) > 0) {
+      toast.dismiss();
+      toast.error('Issues detected', {
+        description: actionData?.errors?.slice()?.shift()
+      });
+    }
+  }, [actionData]);
+
+  useEffect(() => {
     let interval: NodeJS.Timeout;
     const INTERVAL = 5000;
 

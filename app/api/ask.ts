@@ -12,6 +12,7 @@ const KB = 1024;
 const MB = 1024 * KB;
 
 export async function ask({ request, params }: ActionFunctionArgs) {
+  let errors: string[] = [];
   let { getUser } = await getSession(request);
   let session = await getUser();
   let fileStorage = new MemoryFileStorage();
@@ -36,12 +37,6 @@ export async function ask({ request, params }: ActionFunctionArgs) {
       }
     ]
   );
-  let task = await tasks.trigger<typeof askTask>('ask', {
-    account: session?.account_id,
-    organization: session?.organization_id,
-    thread: thread?.id,
-    query
-  });
 
   for (let file of files) {
     if (file.size <= 0) {
@@ -52,23 +47,44 @@ export async function ask({ request, params }: ActionFunctionArgs) {
     let parser = parsers[file?.type];
     let docs = await parser?.(file as any);
 
-    await ingestDocuments(
-      docs?.map((doc, idx) => ({
-        ...doc,
+    try {
+      let ingestResult = await ingestDocuments(
+        docs?.map((doc, idx) => ({
+          ...doc,
+          metadata: {
+            original: JSON.stringify(doc?.metadata),
+            source: `${source} [Page ${idx + 1}]`
+          }
+        })),
+        thread_id
+      );
+      console.log('ingest', ingestResult);
+    } catch (err: any) {
+      errors.push(err.message);
+
+      return {
+        data: null,
+        errors,
         metadata: {
-          original: JSON.stringify(doc?.metadata),
-          source: `${source} [Page ${idx + 1}]`
+          action: 'ask',
+          timestamp: new Date().toISOString()
         }
-      })),
-      thread_id
-    );
+      };
+    }
   }
+
+  let task = await tasks.trigger<typeof askTask>('ask', {
+    account: session?.account_id,
+    organization: session?.organization_id,
+    thread: thread?.id,
+    query
+  });
 
   return {
     data: {
       task
     },
-    errors: null,
+    errors,
     metadata: {
       action: 'ask',
       timestamp: new Date().toISOString()

@@ -1,7 +1,9 @@
 import { randomUUID } from 'node:crypto';
-import { ChatAnthropic } from '@langchain/anthropic';
-import { OpenAIEmbeddings, ChatOpenAI } from '@langchain/openai';
+// import { ChatAnthropic } from '@langchain/anthropic';
+// import { OpenAIEmbeddings, ChatOpenAI } from '@langchain/openai';
+import { OllamaEmbeddings, ChatOllama } from '@langchain/ollama';
 import { Chroma } from '@langchain/community/vectorstores/chroma';
+import { MemoryVectorStore } from 'langchain/vectorstores/memory';
 // import { RecursiveCharacterTextSplitter } from 'langchain/text_splitter';
 import { PromptTemplate } from '@langchain/core/prompts';
 import { RunnableSequence } from '@langchain/core/runnables';
@@ -17,23 +19,31 @@ import { JSONLoader } from 'langchain/document_loaders/fs/json';
 import { compile } from 'html-to-text';
 
 function getStore(collectionName: string) {
-  let embeddings = new OpenAIEmbeddings({
-    model: 'text-embedding-3-small',
-    openAIApiKey: process.env.OPENAI_API_KEY
-  });
-
-  return new Chroma(embeddings, {
-    collectionName,
-    chromaCloudAPIKey: process.env.CHROMA_API_KEY,
-    clientParams: {
-      tenant: process.env.CHROMA_TENANT,
-      database: process.env.CHROMA_DATABASE,
-      host: 'api.trychroma.com',
-      port: 8000,
-      ssl: true,
-      headers: { 'x-chroma-token': process.env.CHROMA_API_KEY as string }
+  // let embeddings = new OpenAIEmbeddings({
+  //   model: 'text-embedding-3-small',
+  //   openAIApiKey: process.env.OPENAI_API_KEY
+  // });
+  let embeddings = new OllamaEmbeddings({
+    model: 'nomic-embed-text',
+    requestOptions: {
+      keepAlive: '10m'
     }
   });
+
+  return new MemoryVectorStore(embeddings);
+  // return new Chroma(embeddings, {
+  //   collectionName,
+  //   chromaCloudAPIKey: process.env.CHROMA_API_KEY,
+  //   clientParams: {
+  //     tenant: process.env.CHROMA_TENANT,
+  //     database: process.env.CHROMA_DATABASE,
+  //     host: 'api.trychroma.com',
+  //     port: 8000,
+  //     ssl: true,
+  //     headers: { 'x-chroma-token': process.env.CHROMA_API_KEY as string },
+  //     fetchOptions: {keepalive:true}
+  //   }
+  // });
 }
 
 export async function ingestDocuments(
@@ -49,9 +59,7 @@ export async function ingestDocuments(
 
   let store = getStore(collection ?? randomUUID());
 
-  store.addDocuments(documents);
-
-  return store.toJSON();
+  return await store.addDocuments(documents);
 }
 
 async function retrieveSources(collection: string, query: string, k = 4) {
@@ -81,10 +89,14 @@ Context: {context}
 Answer:`
   );
 
-  let llm = new ChatAnthropic({
-    model: 'claude-3-5-sonnet-20240620',
-    temperature: 0,
-    anthropicApiKey: process.env.ANTHROPIC_API_KEY
+  // let llm = new ChatAnthropic({
+  //   model: 'claude-3-5-sonnet-20240620',
+  //   temperature: 0,
+  //   anthropicApiKey: process.env.ANTHROPIC_API_KEY
+  // });
+  let llm = new ChatOllama({
+    model: 'smollm',
+    temperature: 0
   });
 
   let context = sources.map(doc => doc.pageContent).join('\n\n');

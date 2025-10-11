@@ -3,6 +3,8 @@ import type { Route } from './+types/login';
 import { handler } from '~/api/handler';
 import { useEffect } from 'react';
 import { toast } from 'sonner';
+import { getSession } from '~/database/auth.server';
+import { redirect } from 'react-router';
 
 export function meta({}: Route.MetaArgs) {
   return [
@@ -13,6 +15,15 @@ export function meta({}: Route.MetaArgs) {
 
 export function action(args: Route.ActionArgs) {
   return handler('login', args);
+}
+
+export async function loader({ request }: Route.LoaderArgs) {
+  let { getUser } = await getSession(request);
+  let session = await getUser();
+
+  if (session) {
+    throw redirect(`/${session?.organization_id}`);
+  }
 }
 
 export default function LoginPage({ actionData }: Route.ComponentProps) {
