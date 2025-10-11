@@ -31,8 +31,11 @@ export function meta({}: Route.MetaArgs) {
   ];
 }
 
-export function action(args: Route.ActionArgs) {
-  return handler('ask', args);
+export async function action(args: Route.ActionArgs) {
+  let formData = await args?.request?.clone()?.formData();
+  let action = formData?.get('_action')?.toString() as string;
+
+  return handler(action, args);
 }
 
 export async function loader({ request }: Route.LoaderArgs) {

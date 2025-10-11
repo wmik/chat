@@ -1,6 +1,6 @@
-import { logger, task, wait } from '@trigger.dev/sdk/v3';
-import { randomUUID } from 'node:crypto';
+import { logger, task } from '@trigger.dev/sdk/v3';
 import { upsertThread } from '~/database/threads.server';
+import { queryWithStreaming } from '~/llm.server';
 
 type AskPayload = {
   account?: string;
@@ -14,15 +14,12 @@ export const askTask = task({
   // Set an optional maxDuration to prevent tasks from running indefinitely
   maxDuration: 300, // Stop executing after 300 secs (5 mins) of compute
   run: async (payload: AskPayload, { ctx }) => {
-    logger.log('Ask!', { payload, ctx });
-
-    await wait.for({ seconds: 5 });
-
-    let response = await fetch(
-      'https://raw.githubusercontent.com/wmik/use-media-recorder/refs/heads/main/readme.md'
+    let result = await queryWithStreaming(
+      payload?.thread as string,
+      payload?.query
     );
 
-    if (response.ok) {
+    if (result?.answer) {
       let thread = await upsertThread(
         {
           id: payload?.thread,
@@ -31,8 +28,14 @@ export const askTask = task({
         },
         [
           {
-            content: await response.clone().text(),
-            author: 'assistant'
+            content: result?.answer,
+            author: 'assistant',
+            custom: {
+              result: {
+                answer: result?.answer,
+                sources: result?.sources?.map(source => ({ ...source }))
+              }
+            }
           }
         ]
       );
@@ -48,6 +51,7 @@ export const askTask = task({
         }
       };
     }
+
     return {
       data: null,
       errors: ['Unable to add message to thread'],

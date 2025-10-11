@@ -14,7 +14,13 @@ const handlers: Record<
 > = {
   ask,
   login,
-  register
+  register,
+  refresh: () =>
+    Promise.resolve({
+      data: null,
+      errors: null,
+      metadata: { action: 'refresh', timestamp: new Date().toISOString() }
+    })
 };
 
 export async function handler(action: string, args: ActionFunctionArgs) {

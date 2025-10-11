@@ -75,7 +75,7 @@ async function retrieveSources(collection: string, query: string, k = 4) {
 export async function queryWithStreaming(
   collection: string,
   question: string,
-  onStream: (chunk: string) => void
+  onStream?: (chunk: string) => void
 ) {
   let sources = await retrieveSources(collection, question);
 
@@ -95,7 +95,7 @@ Answer:`
   //   anthropicApiKey: process.env.ANTHROPIC_API_KEY
   // });
   let llm = new ChatOllama({
-    model: 'smollm',
+    model: 'smollm:135m',
     temperature: 0
   });
 
@@ -112,7 +112,7 @@ Answer:`
 
   for await (let chunk of stream) {
     answer += chunk;
-    onStream(chunk);
+    onStream?.(chunk);
   }
 
   return {
