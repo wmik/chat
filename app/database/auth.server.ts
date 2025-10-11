@@ -243,3 +243,21 @@ export async function verifyLoginCode(token: string) {
 
   return expired ? null : custom;
 }
+
+type CheckRoleConfig = {
+  account?: string[];
+  organization?: string[];
+};
+
+export function checkRole(
+  session: CompoundMembership,
+  config: CheckRoleConfig
+) {
+  let accountRole = session?.account?.role;
+  let organizationRole = session?.role;
+  let accountCheck = config?.account?.includes(accountRole) ?? true;
+  let organizationCheck =
+    config?.organization?.includes(organizationRole) ?? true;
+
+  return accountCheck && organizationCheck;
+}

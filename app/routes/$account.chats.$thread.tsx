@@ -3,7 +3,7 @@ import type { UIMatch } from 'react-router';
 import { redirect } from 'react-router';
 import { Crumbs } from '~/components/crumbs';
 import { ChatInterface } from '~/components/organisms/chat-interface';
-import { getSession } from '~/database/auth.server';
+import { checkRole, getSession } from '~/database/auth.server';
 import { getThreadById } from '~/database/threads.server';
 
 export const handle = {
@@ -32,9 +32,10 @@ export async function loader({ request, params }: Route.LoaderArgs) {
     throw redirect('/login');
   }
 
-  let admin = session?.account?.role === 'ADMIN';
-  let owner = session?.role === 'OWNER';
-  let authorized = admin || owner;
+  let authorized = checkRole(session, {
+    account: ['ADMIN'],
+    organization: ['OWNER']
+  });
   let thread = await getThreadById(params?.thread);
 
   if (thread) {

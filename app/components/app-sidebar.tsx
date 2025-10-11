@@ -13,7 +13,7 @@ import {
 import { NavMain } from '~/components/nav-main';
 import { NavRecents } from '~/components/nav-recents';
 import { NavUser } from '~/components/nav-user';
-import { TeamSwitcher } from '~/components/team-switcher';
+import { OrganizationSwitcher } from '~/components/organization-switcher';
 import {
   Sidebar,
   SidebarContent,
@@ -114,27 +114,38 @@ const data = {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   let loaderData = useLoaderData<Route.ComponentProps['loaderData']>();
-  let { session, organizations } = loaderData?.data ?? {};
+  let { session, organizations, threads } = loaderData?.data ?? {};
 
   return (
     <Sidebar collapsible="icon" {...props}>
       <SidebarHeader>
-        <TeamSwitcher
-          teams={
+        <OrganizationSwitcher
+          organizations={
             organizations?.map(organization => ({
               name: organization?.name,
               logo: BuildingIcon,
               plan: 'Free'
-            })) ?? data.teams
+            })) ?? []
           }
         />
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={data.navMain} />
-        <NavRecents recents={data.recents} />
+        <NavRecents
+          recents={threads?.map(thread => ({
+            name: thread?.title ?? thread?.id,
+            url: `/${thread?.organization_id}/chats/${thread?.id}`,
+            icon: null
+          }))}
+        />
       </SidebarContent>
       <SidebarFooter>
-        <NavUser user={{ ...data.user, ...session?.account }} />
+        <NavUser
+          user={{
+            avatar: 'https://avatar.iran.liara.run/public/14',
+            ...session?.account
+          }}
+        />
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>

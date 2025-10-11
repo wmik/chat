@@ -10,7 +10,7 @@ import {
 import { toast } from 'sonner';
 import { useEffect } from 'react';
 import { Crumbs } from '~/components/crumbs';
-import { getSession } from '~/database/auth.server';
+import { checkRole, getSession } from '~/database/auth.server';
 import {
   listOrganizationThreads,
   listUserThreads
@@ -43,9 +43,10 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw redirect('/login');
   }
 
-  let admin = session?.account?.role === 'ADMIN';
-  let owner = session?.role === 'OWNER';
-  let authorized = admin || owner;
+  let authorized = checkRole(session, {
+    account: ['ADMIN'],
+    organization: ['OWNER']
+  });
 
   let threads = authorized
     ? await listOrganizationThreads(session?.organization_id as string)

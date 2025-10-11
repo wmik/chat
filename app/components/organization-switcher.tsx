@@ -18,18 +18,20 @@ import {
   SidebarMenuItem,
   useSidebar
 } from '~/components/ui/sidebar';
+import { OrganizationCreateDialog } from './organization-create-dialog';
 
-export function TeamSwitcher({
-  teams
+export function OrganizationSwitcher({
+  organizations
 }: {
-  teams: {
+  organizations: {
     name: string;
     logo: React.ElementType;
     plan: string;
   }[];
 }) {
   const { isMobile } = useSidebar();
-  const [activeTeam, setActiveTeam] = React.useState(teams[0]);
+  const [activeTeam, setActiveTeam] = React.useState(organizations[0]);
+  let [open, setOpen] = React.useState(false);
 
   if (!activeTeam) {
     return null;
@@ -63,28 +65,35 @@ export function TeamSwitcher({
             <DropdownMenuLabel className="text-muted-foreground text-xs">
               Organizations
             </DropdownMenuLabel>
-            {teams.map((team, index) => (
+            {organizations.map((organization, index) => (
               <DropdownMenuItem
-                key={team.name}
-                onClick={() => setActiveTeam(team)}
+                key={organization.name}
+                onClick={() => setActiveTeam(organization)}
                 className="gap-2 p-2"
               >
                 <div className="flex size-6 items-center justify-center rounded-md border">
-                  <team.logo className="size-3.5 shrink-0" />
+                  <organization.logo className="size-3.5 shrink-0" />
                 </div>
-                {team.name}
+                {organization.name}
                 <DropdownMenuShortcut>⌘{index + 1}</DropdownMenuShortcut>
               </DropdownMenuItem>
             ))}
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="gap-2 p-2">
+
+            <DropdownMenuItem
+              className="gap-2 p-2"
+              onClick={() => setOpen(true)}
+            >
               <div className="flex size-6 items-center justify-center rounded-md border bg-transparent">
                 <Plus className="size-4" />
               </div>
-              <div className="text-muted-foreground font-medium">Add team</div>
+              <div className="text-muted-foreground font-medium">
+                Add organization
+              </div>
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <OrganizationCreateDialog open={open} setOpen={setOpen} />
       </SidebarMenuItem>
     </SidebarMenu>
   );

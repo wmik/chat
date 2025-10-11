@@ -9,7 +9,15 @@ import type { Route } from './+types/$account';
 import { Outlet, redirect, useMatches, type UIMatch } from 'react-router';
 import { Fragment } from 'react/jsx-runtime';
 import type { ReactNode } from 'react';
-import { getSession, listUserOrganizations } from '~/database/auth.server';
+import {
+  checkRole,
+  getSession,
+  listUserOrganizations
+} from '~/database/auth.server';
+import {
+  listOrganizationThreads,
+  listUserThreads
+} from '~/database/threads.server';
 
 export async function loader({ request }: Route.LoaderArgs) {
   let { getUser } = await getSession(request);
@@ -19,11 +27,19 @@ export async function loader({ request }: Route.LoaderArgs) {
     throw redirect('/login');
   }
 
+  let authorized = checkRole(session, {
+    account: ['ADMIN'],
+    organization: ['OWNER']
+  });
   let organizations = await listUserOrganizations(session?.account?.email);
+  let threads = authorized
+    ? await listOrganizationThreads(session?.organization_id as string)
+    : await listUserThreads(session?.account_id);
 
   return {
     data: {
       session,
+      threads,
       organizations
     },
     errors: null,
@@ -35,7 +51,7 @@ export async function loader({ request }: Route.LoaderArgs) {
 
 type Breadcrumb = (props: UIMatch) => ReactNode;
 
-export default function ChatPage({}: Route.ComponentProps) {
+export default function ChatPageLayout({}: Route.ComponentProps) {
   let matches = useMatches() as UIMatch<unknown, { breadcrumb: Breadcrumb }>[];
 
   return (
